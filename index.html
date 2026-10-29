@@ -1,0 +1,482 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#172554">
+<title>マイ貯金管理</title>
+<style>
+:root{--blue:#2563eb;--navy:#172554;--bg:#f4f6fb;--green:#059669;--red:#dc4545;--muted:#64748b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#1e293b;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+header{background:linear-gradient(135deg,#172554,#2563eb);color:white;padding:25px 18px 30px;border-radius:0 0 24px 24px}
+.wrap{max-width:760px;margin:auto}
+h1{font-size:24px;margin:8px 0 22px}
+h2{font-size:16px;margin:0 0 15px}
+.small{font-size:12px;opacity:.8}
+.big{font-size:36px;font-weight:800;margin:6px 0 20px;overflow-wrap:anywhere}
+.topgrid,.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:#ffffff20;border:1px solid #ffffff30;padding:12px;border-radius:13px;min-width:0}
+.tile span,.stat span{font-size:12px;display:block}
+.tile strong{display:block;font-size:18px;margin-top:6px;overflow-wrap:anywhere}
+main{max-width:760px;margin:auto;padding:15px 12px 35px}
+nav{display:flex;gap:7px;overflow-x:auto;padding:3px 0 14px}
+nav button{flex-shrink:0;border:1px solid #e0e6ef;background:white;border-radius:20px;padding:10px 13px;font-weight:700}
+nav button.active{background:var(--navy);color:white}
+.page{display:none}.page.active{display:block}
+.card{background:white;border:1px solid #e4e9f1;border-radius:16px;padding:16px;margin-bottom:13px}
+.stat{background:#f6f8fc;border-radius:12px;padding:12px;min-width:0}
+.stat strong{display:block;font-size:19px;margin-top:6px;overflow-wrap:anywhere}
+.green{color:var(--green)}.red{color:var(--red)}
+label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}
+input,select{width:100%;padding:11px;border:1px solid #dbe2ed;border-radius:10px;font:inherit;font-size:16px;background:white;color:#1e293b}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.btn{border:0;border-radius:11px;padding:12px;font-size:14px;font-weight:750;cursor:pointer}
+.primary{background:var(--blue);color:white}
+.secondary{background:#eaf0ff;color:#1d4ed8}
+.danger{background:#fff0f0;color:#c53030}
+.full{width:100%;margin-top:13px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions button{padding:16px 5px;border-radius:13px;font-weight:750;font-size:15px;border:0}
+.inbtn{background:#dcfce7;color:#15803d}.outbtn{background:#fee2e2;color:#b91c1c}
+.item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #edf0f5}
+.item:last-child{border-bottom:0}
+.icon{width:38px;height:38px;flex-shrink:0;display:grid;place-items:center;background:#eef2ff;border-radius:12px}
+.info{flex:1;min-width:0}.info strong{font-size:14px;overflow-wrap:anywhere}
+.info small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+.money{font-weight:800;font-size:13px;white-space:nowrap}
+.x{border:0;background:none;color:#94a3b8;font-size:19px}
+.empty{text-align:center;color:#94a3b8;padding:20px;font-size:13px}
+.track{height:8px;background:#e5eaf2;border-radius:20px;overflow:hidden;margin:9px 0}
+.fill{height:100%;background:#2563eb;width:0}
+.muted{font-size:12px;color:var(--muted);line-height:1.7}
+.bucket{padding:13px 0;border-bottom:1px solid #edf0f5}
+.bucket:last-child{border:0}
+.buckethead{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.buckethead strong{font-size:14px}
+.bar{height:8px;background:#edf0f5;border-radius:20px;margin-top:8px;overflow:hidden}
+.bar div{height:100%;background:#60a5fa}
+.monthrow{display:grid;grid-template-columns:52px 1fr 80px;gap:8px;align-items:center;margin:13px 0;font-size:12px}
+.monthbars{display:grid;gap:4px}
+.monthbars div{height:7px;border-radius:5px}
+.inbar{background:#10b981}.outbar{background:#f87171}
+footer{text-align:center;color:#94a3b8;font-size:11px;padding:15px}
+</style>
+</head>
+<body>
+<header>
+<div class="wrap">
+<div class="small">PERSONAL MONEY MANAGER</div>
+<h1>マイ貯金管理</h1>
+<div class="small">現在の総貯金額</div>
+<div class="big" id="balance">¥0</div>
+<div class="topgrid">
+<div class="tile"><span>今月の収入</span><strong id="topIn">¥0</strong></div>
+<div class="tile"><span>今月の支出</span><strong id="topOut">¥0</strong></div>
+</div>
+</div>
+</header>
+<main>
+<nav>
+<button class="active" data-page="home">ホーム</button>
+<button data-page="transactions">収支記録</button>
+<button data-page="funds">目的別資金</button>
+<button data-page="recurring">定期収支</button>
+<button data-page="reports">月別分析</button>
+<button data-page="settings">設定</button>
+</nav>
+
+<section class="page active" id="home">
+<div class="card">
+<h2>お金を記録</h2>
+<div class="actions">
+<button class="inbtn" onclick="openTransaction('income')">＋ 入金・収入</button>
+<button class="outbtn" onclick="openTransaction('expense')">− 支出・出金</button>
+</div>
+</div>
+<div class="card">
+<h2>今月の状況</h2>
+<div class="grid">
+<div class="stat"><span>収入合計</span><strong class="green" id="homeIn">¥0</strong></div>
+<div class="stat"><span>支出合計</span><strong class="red" id="homeOut">¥0</strong></div>
+<div class="stat"><span>今月の収支</span><strong id="homeNet">¥0</strong></div>
+<div class="stat"><span>前月との差（収支）</span><strong id="homeDiff">—</strong></div>
+</div>
+</div>
+<div class="card">
+<h2>目的別のお金</h2>
+<div id="homeFunds"></div>
+<button class="btn secondary full" onclick="showPage('funds')">目的別資金を管理する</button>
+</div>
+<div class="card">
+<h2>最近の記録</h2>
+<div id="recent"></div>
+<button class="btn secondary full" onclick="showPage('transactions')">すべての記録を見る</button>
+</div>
+</section>
+
+<section class="page" id="transactions">
+<div class="card" id="txFormCard">
+<h2>収支を記録する</h2>
+<form id="txForm">
+<div class="row">
+<div><label>種類</label>
+<select id="txType"><option value="income">収入</option><option value="expense">支出</option></select></div>
+<div><label>日付</label><input id="txDate" type="date" required></div>
+</div>
+<label>金額（円）</label><input id="txAmount" type="number" min="1" step="1" required placeholder="1000">
+<label>使い道・収入元</label>
+<select id="txCategory">
+<option>お小遣い</option><option>アルバイト</option><option>プレゼント</option>
+<option>食費</option><option>交通費</option><option>娯楽</option>
+<option>買い物</option><option>学用品</option><option>旅行</option><option>その他</option>
+</select>
+<label>どの目的のお金？</label>
+<select id="txFund"><option value="">自由資金</option></select>
+<label>メモ（任意）</label><input id="txMemo" maxlength="100" placeholder="内容を入力">
+<button class="btn primary full" type="submit">記録を保存</button>
+</form>
+<p class="muted">目的別資金を選ぶと、その資金から支出したり、その目的に向けて収入を計上したりできます。</p>
+</div>
+<div class="card"><h2>取引履歴</h2>
+<div class="row">
+<div><label>表示月</label><input id="filterMonth" type="month"></div>
+<div><label>種類</label><select id="filterType"><option value="all">すべて</option><option value="income">収入</option><option value="expense">支出</option></select></div>
+</div>
+<div id="history"></div>
+</div>
+</section>
+
+<section class="page" id="funds">
+<div class="card">
+<h2>目的別のお金を作る</h2>
+<p class="muted">旅行用、大学用、自由に使うお金など、目的ごとに残高と目標を管理します。</p>
+<form id="fundForm">
+<label>目的・名前</label><input id="fundName" maxlength="40" required placeholder="例：京都旅行">
+<div class="row">
+<div><label>最初に入れる金額</label><input id="fundInitial" type="number" min="0" step="1" value="0"></div>
+<div><label>目標金額</label><input id="fundGoal" type="number" min="0" step="1" value="0"></div>
+</div>
+<button class="btn primary full" type="submit">目的別資金を追加</button>
+</form>
+</div>
+<div class="card"><h2>登録済みの目的</h2><div id="fundList"></div></div>
+</section>
+
+<section class="page" id="recurring">
+<div class="card">
+<h2>毎月の定期収支</h2>
+<p class="muted">毎月のお小遣い、定期的な収入、サブスクなどを登録します。アプリを開いた際に、予定日を過ぎた分を記録へ反映します。</p>
+<form id="recForm">
+<label>名称</label><input id="recName" required maxlength="60" placeholder="例：毎月のお小遣い">
+<div class="row">
+<div><label>種類</label><select id="recType"><option value="income">定期収入</option><option value="expense">定期支出</option></select></div>
+<div><label>毎月の金額（円）</label><input id="recAmount" type="number" min="1" step="1" required></div>
+</div>
+<div class="row">
+<div><label>毎月の日付</label><select id="recDay"></select></div>
+<div><label>開始月</label><input id="recStart" type="month" required></div>
+</div>
+<label>終了月（任意）</label><input id="recEnd" type="month">
+<label>使い道・収入元</label><select id="recCategory"><option>お小遣い</option><option>アルバイト</option><option>サブスク</option><option>交通費</option><option>娯楽</option><option>その他</option></select>
+<label>目的別資金</label><select id="recFund"><option value="">自由資金</option></select>
+<button class="btn primary full" type="submit">定期収支を登録</button>
+</form>
+</div>
+<div class="card"><h2>登録済みの定期収支</h2><div id="recList"></div></div>
+</section>
+
+<section class="page" id="reports">
+<div class="card">
+<h2>月別分析</h2>
+<label>分析する月</label><input id="reportMonth" type="month">
+<div class="grid" style="margin-top:12px">
+<div class="stat"><span>収入</span><strong class="green" id="reportIn">¥0</strong></div>
+<div class="stat"><span>支出</span><strong class="red" id="reportOut">¥0</strong></div>
+<div class="stat"><span>収支</span><strong id="reportNet">¥0</strong></div>
+<div class="stat"><span>前月比</span><strong id="reportDiff">—</strong></div>
+</div>
+</div>
+<div class="card"><h2>収入・支出の月別推移</h2><div id="monthlyChart"></div><p class="muted">緑：収入　赤：支出。過去6か月の実績を比較します。</p></div>
+<div class="card"><h2>今月の支出内訳</h2><div id="categoryReport"></div></div>
+<div class="card"><h2>定期収支の予定</h2><div id="recSummary"></div></div>
+</section>
+
+<section class="page" id="settings">
+<div class="card">
+<h2>初期の貯金額</h2>
+<p class="muted">アプリを使い始める時点ですでに持っているお金を設定します。</p>
+<label>初期残高（円）</label><input id="initialBalance" type="number" min="0" step="1">
+<button class="btn primary full" id="saveInitial">初期残高を保存</button>
+</div>
+<div class="card">
+<h2>データの保存・復元</h2>
+<button class="btn secondary full" id="export">バックアップをダウンロード</button>
+<label>バックアップから復元</label><input id="importFile" type="file" accept=".json,application/json">
+<button class="btn danger full" id="clear">全データを削除</button>
+<p class="muted">データはこのブラウザ内に保存されます。定期収支も実際に記録へ反映されるのは、このアプリを開いたときです。別の端末との同期にはサーバー連携が必要です。</p>
+</div>
+</section>
+<footer>マイ貯金管理 · 個人用</footer>
+</main>
+
+<script>
+const KEY="my-savings-manager-v2";
+const $=id=>document.getElementById(id);
+const yen=n=>"¥"+Math.round(n||0).toLocaleString("ja-JP");
+const now=new Date();
+const ym=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+const today=()=>ym(now)+"-"+String(now.getDate()).padStart(2,"0");
+const monthNow=ym(now);
+let data={initial:0,entries:[],funds:[],recurring:[],lastAuto:""};
+try{
+ const v=JSON.parse(localStorage.getItem(KEY)||"null");
+ if(v&&Array.isArray(v.entries))data={...data,...v};
+}catch(e){}
+function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
+function safe(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function monthDiff(a,b){
+ const [ay,am]=a.split("-").map(Number),[by,bm]=b.split("-").map(Number);
+ return (by-ay)*12+bm-am;
+}
+function save(){
+ try{localStorage.setItem(KEY,JSON.stringify(data));render()}
+ catch(e){alert("保存できませんでした。ブラウザの保存設定をご確認ください。")}
+}
+function balance(){return Number(data.initial||0)+data.entries.reduce((s,e)=>s+(e.type==="income"?e.amount:-e.amount),0)}
+function totals(month){
+ const list=data.entries.filter(e=>e.date.slice(0,7)===month);
+ const inc=list.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount,0);
+ const out=list.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0);
+ return {inc,out,net:inc-out,list};
+}
+function addEntry(e){data.entries.push(e)}
+function fundBalance(f){
+ return Number(f.initial||0)+data.entries.filter(e=>e.fundId===f.id)
+ .reduce((s,e)=>s+(e.type==="income"?e.amount:-e.amount),0);
+}
+function fillFundSelects(){
+ ["txFund","recFund"].forEach(id=>{
+  const el=$(id),current=el.value;
+  el.innerHTML='<option value="">自由資金</option>'+data.funds.map(f=>`<option value="${safe(f.id)}">${safe(f.name)}</option>`).join("");
+  if([...el.options].some(o=>o.value===current))el.value=current;
+ });
+}
+function autoRecurring(){
+ const current=monthNow;
+ let changed=false;
+ data.recurring.forEach(r=>{
+  const start=r.start||current,end=r.end||"9999-12";
+  if(current<start)return;
+  const until=current<end?current:end;
+  let diff=monthDiff(start,until);
+  if(diff<0)return;
+  for(let i=0;i<=diff;i++){
+   const [y,m]=start.split("-").map(Number);
+   const d=new Date(y,m-1+i,1);
+   const month=ym(d);
+   if(month>end||month>current)continue;
+   const day=Math.min(Number(r.day)||1,new Date(d.getFullYear(),d.getMonth()+1,0).getDate());
+   const date=month+"-"+String(day).padStart(2,"0");
+   const key=r.id+"@"+month;
+   if(data.entries.some(e=>e.recurringKey===key))continue;
+   if(date>today())continue;
+   addEntry({id:id(),type:r.type,amount:Number(r.amount),date,
+    category:r.category,memo:r.name+"（定期）",fundId:r.fundId||"",
+    recurringKey:key,created:Date.now()+i});
+   changed=true;
+  }
+ });
+ if(changed){
+  try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}
+ }
+}
+function showPage(p){
+ document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===p));
+ document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===p));
+ if(p==="reports")renderReports();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+function openTransaction(type){
+ $("txType").value=type;
+ $("txDate").value=today();
+ showPage("transactions");
+ $("txAmount").focus();
+}
+$("txDate").value=today();
+$("filterMonth").value=monthNow;
+$("reportMonth").value=monthNow;
+$("recStart").value=monthNow;
+for(let i=1;i<=31;i++)$("recDay").add(new Option(i+"日",i));
+$("recDay").value=1;
+
+$("txForm").onsubmit=e=>{
+ e.preventDefault();
+ const amount=Number($("txAmount").value),type=$("txType").value;
+ if(!Number.isSafeInteger(amount)||amount<=0)return alert("金額を正しく入力してください。");
+ if(type==="expense"&&amount>balance())return alert("総貯金額を超える支出は記録できません。");
+ const fundId=$("txFund").value;
+ if(fundId){
+  const f=data.funds.find(x=>x.id===fundId);
+  if(!f)return alert("目的別資金が見つかりません。");
+  if(type==="expense"&&amount>fundBalance(f))return alert("この目的別資金の残高が足りません。");
+ }
+ addEntry({id:id(),type,amount,date:$("txDate").value,category:$("txCategory").value,
+  memo:$("txMemo").value.trim(),fundId,created:Date.now()});
+ save();$("txAmount").value="";$("txMemo").value="";
+ showPage("home");
+};
+$("filterMonth").onchange=renderHistory;
+$("filterType").onchange=renderHistory;
+
+$("fundForm").onsubmit=e=>{
+ e.preventDefault();
+ const name=$("fundName").value.trim(),initial=Number($("fundInitial").value),goal=Number($("fundGoal").value);
+ if(!name||!Number.isSafeInteger(initial)||!Number.isSafeInteger(goal)||initial<0||goal<0)return alert("入力内容を確認してください。");
+ data.funds.push({id:id(),name,initial,goal});
+ save();$("fundName").value="";$("fundInitial").value=0;$("fundGoal").value=0;
+};
+function deleteFund(fid){
+ const used=data.entries.some(e=>e.fundId===fid)||data.recurring.some(r=>r.fundId===fid);
+ if(used)return alert("この資金は取引や定期収支に使用されています。先に該当する記録を変更してください。");
+ if(confirm("この目的別資金を削除しますか？")){
+  data.funds=data.funds.filter(f=>f.id!==fid);save();
+ }
+}
+$("recForm").onsubmit=e=>{
+ e.preventDefault();
+ const amount=Number($("recAmount").value),start=$("recStart").value,end=$("recEnd").value;
+ if(!Number.isSafeInteger(amount)||amount<=0||!start||(end&&end<start))return alert("金額・開始月・終了月を確認してください。");
+ data.recurring.push({id:id(),name:$("recName").value.trim(),type:$("recType").value,
+  amount,day:Number($("recDay").value),start,end,category:$("recCategory").value,fundId:$("recFund").value});
+ autoRecurring();save();$("recName").value="";$("recAmount").value="";
+};
+function deleteRecurring(rid){
+ if(confirm("この定期収支の設定を削除しますか？すでに記録された過去の取引は残ります。")){
+  data.recurring=data.recurring.filter(r=>r.id!==rid);save();
+ }
+}
+function deleteEntry(eid){
+ const e=data.entries.find(x=>x.id===eid);if(!e)return;
+ if(confirm("この取引を削除しますか？")){
+  data.entries=data.entries.filter(x=>x.id!==eid);save();
+ }
+}
+function entryHTML(e){
+ const isIn=e.type==="income";
+ const fund=data.funds.find(f=>f.id===e.fundId);
+ return `<div class="item">
+ <div class="icon">${isIn?"＋":"－"}</div>
+ <div class="info"><strong>${safe(e.memo||e.category||"取引")}</strong>
+ <small>${safe(e.date)} · ${safe(e.category||"その他")}${fund?" · "+safe(fund.name):""}</small></div>
+ <div class="money ${isIn?"green":"red"}">${isIn?"+":"−"}${yen(e.amount)}</div>
+ <button class="x" onclick="deleteEntry('${safe(e.id)}')">×</button></div>`;
+}
+function renderHistory(){
+ const m=$("filterMonth").value,t=$("filterType").value;
+ const list=[...data.entries].filter(e=>(!m||e.date.slice(0,7)===m)&&(t==="all"||e.type===t))
+ .sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created);
+ $("history").innerHTML=list.length?list.map(entryHTML).join(""):'<div class="empty">記録がありません</div>';
+}
+function renderFunds(){
+ $("homeFunds").innerHTML=data.funds.length?data.funds.map(f=>{
+  const b=fundBalance(f),pct=f.goal>0?Math.max(0,Math.min(100,b/f.goal*100)):0;
+  return `<div class="bucket"><div class="buckethead"><strong>${safe(f.name)}</strong><strong>${yen(b)}</strong></div>
+  <div class="bar"><div style="width:${pct}%"></div></div>
+  <div class="muted">${f.goal>0?"目標 "+yen(f.goal)+" · "+Math.floor(pct)+"%":"目標未設定"}</div></div>`;
+ }).join(""):'<div class="empty">目的別資金をまだ作成していません</div>';
+ $("fundList").innerHTML=data.funds.length?data.funds.map(f=>{
+  const b=fundBalance(f),pct=f.goal>0?Math.max(0,Math.min(100,b/f.goal*100)):0;
+  return `<div class="bucket"><div class="buckethead"><strong>${safe(f.name)}</strong><strong>${yen(b)}</strong></div>
+  <div class="muted">初期額 ${yen(f.initial)} · 目標 ${f.goal?yen(f.goal):"未設定"}</div>
+  <div class="bar"><div style="width:${pct}%"></div></div>
+  <button class="btn danger" onclick="deleteFund('${safe(f.id)}')">目的を削除</button></div>`;
+ }).join(""):'<div class="empty">目的別資金がありません</div>';
+}
+function renderRecurring(){
+ $("recList").innerHTML=data.recurring.length?data.recurring.map(r=>{
+  return `<div class="item"><div class="icon">${r.type==="income"?"↗":"↘"}</div>
+  <div class="info"><strong>${safe(r.name)}</strong>
+  <small>毎月${r.day}日 · ${r.start}${r.end?" ～ "+r.end:"以降"} · ${safe(r.category)}</small></div>
+  <div class="money ${r.type==="income"?"green":"red"}">${r.type==="income"?"+":"−"}${yen(r.amount)}</div>
+  <button class="x" onclick="deleteRecurring('${safe(r.id)}')">×</button></div>`;
+ }).join(""):'<div class="empty">定期収支を登録してください</div>';
+}
+function renderReports(){
+ const m=$("reportMonth").value||monthNow;
+ const t=totals(m),prev=new Date(Number(m.slice(0,4)),Number(m.slice(5,7))-2,1);
+ const p=totals(ym(prev));
+ $("reportIn").textContent=yen(t.inc);$("reportOut").textContent=yen(t.out);
+ $("reportNet").textContent=yen(t.net);
+ $("reportDiff").textContent=(t.net-p.net>=0?"+":"")+yen(t.net-p.net);
+ const months=[];
+ for(let i=5;i>=0;i--){
+  const d=new Date(Number(m.slice(0,4)),Number(m.slice(5,7))-1-i,1);
+  months.push(ym(d));
+ }
+ const max=Math.max(1,...months.flatMap(x=>{const z=totals(x);return[z.inc,z.out]}));
+ $("monthlyChart").innerHTML=months.map(x=>{
+  const z=totals(x),iw=z.inc/max*100,ow=z.out/max*100;
+  return `<div class="monthrow"><strong>${x.slice(5)}月</strong>
+  <div class="monthbars"><div class="inbar" style="width:${iw}%"></div><div class="outbar" style="width:${ow}%"></div></div>
+  <span>${z.net>=0?"+":"−"}${yen(Math.abs(z.net))}</span></div>`;
+ }).join("");
+ const cats={};
+ t.list.filter(e=>e.type==="expense").forEach(e=>cats[e.category||"その他"]=(cats[e.category||"その他"]||0)+e.amount);
+ const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+ $("categoryReport").innerHTML=sorted.length?sorted.map(([name,amount])=>`
+ <div class="bucket"><div class="buckethead"><strong>${safe(name)}</strong><strong>${yen(amount)}</strong></div>
+ <div class="bar"><div style="width:${t.out?amount/t.out*100:0}%"></div></div>
+ <div class="muted">支出全体の${t.out?Math.round(amount/t.out*100):0}%</div></div>`).join(""):'<div class="empty">この月の支出はありません</div>';
+ const ri=data.recurring.filter(r=>!r.end||r.end>=m).filter(r=>r.start<=m);
+ const rin=ri.filter(r=>r.type==="income").reduce((s,r)=>s+r.amount,0);
+ const rout=ri.filter(r=>r.type==="expense").reduce((s,r)=>s+r.amount,0);
+ $("recSummary").innerHTML=`<div class="grid">
+ <div class="stat"><span>登録済み定期収入</span><strong class="green">${yen(rin)}</strong></div>
+ <div class="stat"><span>登録済み定期支出</span><strong class="red">${yen(rout)}</strong></div>
+ </div><p class="muted">選択月に有効な定期収支の合計です。終了月・開始月を考慮しています。</p>`;
+}
+$("reportMonth").onchange=renderReports;
+$("saveInitial").onclick=()=>{
+ const n=Number($("initialBalance").value);
+ if(!Number.isSafeInteger(n)||n<0)return alert("0円以上の整数を入力してください。");
+ data.initial=n;save();alert("初期残高を保存しました。");
+};
+$("export").onclick=()=>{
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="my-savings-backup.json";a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+$("importFile").onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
+ try{
+  const d=JSON.parse(await f.text());
+  if(!d||!Array.isArray(d.entries)||!Array.isArray(d.funds)||!Array.isArray(d.recurring)||!Number.isFinite(d.initial)||d.initial<0)throw Error();
+  if(!confirm("現在のデータを置き換えますか？"))return;
+  data=d;save();alert("バックアップを復元しました。");
+ }catch(err){alert("対応するバックアップファイルではありません。")}
+ e.target.value="";
+};
+$("clear").onclick=()=>{
+ if(confirm("すべての貯金記録を削除しますか？")&&confirm("この操作は取り消せません。本当に削除しますか？")){
+  data={initial:0,entries:[],funds:[],recurring:[],lastAuto:""};save();
+ }
+};
+function render(){
+ const b=balance(),t=totals(monthNow),p=totals(ym(new Date(now.getFullYear(),now.getMonth()-1,1)));
+ $("balance").textContent=yen(b);$("topIn").textContent=yen(t.inc);$("topOut").textContent=yen(t.out);
+ $("homeIn").textContent=yen(t.inc);$("homeOut").textContent=yen(t.out);
+ $("homeNet").textContent=yen(t.net);$("homeDiff").textContent=(t.net-p.net>=0?"+":"")+yen(t.net-p.net);
+ $("initialBalance").value=data.initial;
+ fillFundSelects();renderFunds();renderRecurring();renderHistory();renderReports();
+ const list=[...data.entries].sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created).slice(0,5);
+ $("recent").innerHTML=list.length?list.map(entryHTML).join(""):'<div class="empty">まだ記録がありません</div>';
+}
+autoRecurring();
+render();
+</script>
+</body>
+</html>
